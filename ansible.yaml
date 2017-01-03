@@ -1,0 +1,41 @@
+- hosts: localhost
+  connection: local
+  gather_facts: no
+  become: no
+  vars:
+    yum_packages:
+      - { name: colordiff }
+      - { name: curl }
+      - { name: git }
+      - { name: golang }
+      - { name: tmux }
+      - { name: vim }
+      - { name: w3m }
+      - { name: zsh }
+    temp_dir: /temp
+  tasks:
+    # yum
+    - name: Install yum packages
+      yum: name={{ item.name }} state=installed
+      with_items: "{{ yum_packages }}"
+
+    # Install Docker
+    - name: Install Docker
+      shell: "curl -fsSL https://get.docker.com/ | sh"
+      args:
+        creates: /usr/bin/docker
+
+    # Install Peco : Peco cannot be installed via yum
+    - name: Be sure a temporary directory exists in home directory
+      file: path={{temp_dir}} state=directory
+    - name: Download peco
+      get_url: url=https://github.com/peco/peco/releases/download/v0.3.5/peco_linux_386.tar.gz dest="{{temp_dir}}/peco_linux_386.tar.gz"
+    - name: Unarchive downloaded peco
+      unarchive: >
+        src="{{temp_dir}}/peco_linux_386.tar.gz"
+        dest="{{temp_dir}}"
+        copy=no
+    - name: Copy peco to /usr/local/bin
+      shell: "cp {{temp_dir}}/peco_linux_386/peco /usr/local/bin/peco"
+      args:
+        creates: /usr/local/bin/peco 
